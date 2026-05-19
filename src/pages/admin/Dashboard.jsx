@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import AppLayout from '../../components/layout/AppLayout'
 import { StatCard, PageHeader, Spinner, StatusBadge, PhaseBadge } from '../../components/ui'
-import { adminAPI, reportsAPI } from '../../services/api'
+import { adminAPI } from '../../services/api'
+import api from '../../services/api'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { Download, Users, Activity } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -27,11 +28,25 @@ export default function AdminDashboard() {
       .finally(() => setLoading(false))
   }, [])
 
-  const handleDownloadCSV = () => {
-    const token = localStorage.getItem('aq_token')
-    const base = import.meta.env.VITE_API_URL || 'https://atomquest-backend-g9l8.onrender.com'
-    window.open(`${base}/api/reports/achievement?format=csv`, '_blank')
-    toast.success('Downloading CSV report...')
+  const handleDownloadCSV = async () => {
+    try {
+      toast.loading('Preparing CSV...', { id: 'csv' })
+      const response = await api.get('/api/reports/achievement', {
+        params: { format: 'csv' },
+        responseType: 'blob',
+      })
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `achievement_report_${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+      toast.success('CSV downloaded!', { id: 'csv' })
+    } catch (err) {
+      toast.error('Failed to download CSV', { id: 'csv' })
+    }
   }
 
   if (loading) return <AppLayout><div className="flex justify-center py-20"><Spinner /></div></AppLayout>

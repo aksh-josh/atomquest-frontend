@@ -2,8 +2,10 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   LayoutDashboard, Target, CheckSquare, Users, Settings,
-  BookOpen, BarChart3, LogOut, Zap, ChevronRight
+  BookOpen, BarChart3, LogOut, Zap, ChevronRight, HelpCircle
 } from 'lucide-react'
+
+const STORAGE_KEY = (role) => `aq_onboarded_${role}`
 
 const navByRole = {
   EMPLOYEE: [
@@ -96,8 +98,15 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* Logout */}
-      <div className="p-4 border-t border-ink-600">
+      {/* Logout + Help */}
+      <div className="p-4 border-t border-ink-600 space-y-1">
+        <button
+          onClick={() => { localStorage.removeItem(STORAGE_KEY(user?.role)); window.location.reload() }}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-dim hover:text-volt hover:bg-volt/10 transition-all duration-200"
+        >
+          <HelpCircle size={17} strokeWidth={2} />
+          <span>Replay Guide</span>
+        </button>
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-mid hover:text-danger hover:bg-danger/10 transition-all duration-200"

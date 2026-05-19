@@ -1,4 +1,5 @@
 import Sidebar from './Sidebar'
+import OnboardingGuide from '../ui/OnboardingGuide'
 
 export default function AppLayout({ children }) {
   return (
@@ -9,6 +10,7 @@ export default function AppLayout({ children }) {
           {children}
         </div>
       </main>
+      <OnboardingGuide />
     </div>
   )
 }
