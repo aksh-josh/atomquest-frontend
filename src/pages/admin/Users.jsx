@@ -3,19 +3,25 @@ import AppLayout from '../../components/layout/AppLayout'
 import { PageHeader, Spinner, Modal, EmptyState } from '../../components/ui'
 import { adminAPI } from '../../services/api'
 import toast from 'react-hot-toast'
-import { Plus, Edit2, Trash2, Users } from 'lucide-react'
+import { Plus, Edit2, Trash2, Users, Search, Filter } from 'lucide-react'
 
 const emptyForm = { name: '', email: '', password: '', role: 'EMPLOYEE', department: '', managerId: '' }
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
-  const [modal, setModal] = useState(null) // null | 'create' | user object
+  const [modal, setModal] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
 
+  // Search & Filter state
+  const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState('ALL')
+  const [deptFilter, setDeptFilter] = useState('ALL')
+
   const managers = users.filter(u => ['MANAGER', 'ADMIN'].includes(u.role))
+  const departments = [...new Set(users.map(u => u.department).filter(Boolean))]
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -26,6 +32,16 @@ export default function AdminUsers() {
   }, [])
 
   useEffect(() => { fetchUsers() }, [fetchUsers])
+
+  // Filtered users
+  const filtered = users.filter(u => {
+    const matchSearch = !search ||
+      u.name.toLowerCase().includes(search.toLowerCase()) ||
+      u.email.toLowerCase().includes(search.toLowerCase())
+    const matchRole = roleFilter === 'ALL' || u.role === roleFilter
+    const matchDept = deptFilter === 'ALL' || u.department === deptFilter
+    return matchSearch && matchRole && matchDept
+  })
 
   const openCreate = () => { setForm(emptyForm); setModal('create') }
   const openEdit = (user) => {
@@ -67,6 +83,7 @@ export default function AdminUsers() {
   }
 
   const roleColor = { EMPLOYEE: 'text-info', MANAGER: 'text-warn', ADMIN: 'text-volt' }
+  const roleBg = { EMPLOYEE: 'bg-info/10 border-info/30', MANAGER: 'bg-warn/10 border-warn/30', ADMIN: 'bg-volt/10 border-volt/30' }
 
   if (loading) return <AppLayout><div className="flex justify-center py-20"><Spinner /></div></AppLayout>
 
@@ -74,7 +91,7 @@ export default function AdminUsers() {
     <AppLayout>
       <PageHeader
         title="User Management"
-        subtitle={`${users.length} total users`}
+        subtitle={`${filtered.length} of ${users.length} users`}
         action={
           <button onClick={openCreate} className="btn-primary flex items-center gap-2">
             <Plus size={16} /> Add User
@@ -82,8 +99,78 @@ export default function AdminUsers() {
         }
       />
 
-      {users.length === 0 ? (
-        <EmptyState icon={Users} title="No users" description="Add your first user to get started." />
+      {/* Search & Filters */}
+      <div className="flex flex-wrap gap-3 mb-6">
+        {/* Search */}
+        <div className="relative flex-1 min-w-[200px]">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-dim" />
+          <input
+            className="input pl-9"
+            placeholder="Search by name or email..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+
+        {/* Role filter */}
+        <div className="relative">
+          <Filter size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-dim" />
+          <select
+            className="input pl-8 pr-4 min-w-[140px] appearance-none"
+            value={roleFilter}
+            onChange={e => setRoleFilter(e.target.value)}
+          >
+            <option value="ALL">All Roles</option>
+            <option value="EMPLOYEE">Employee</option>
+            <option value="MANAGER">Manager</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </div>
+
+        {/* Department filter */}
+        {departments.length > 0 && (
+          <select
+            className="input min-w-[160px]"
+            value={deptFilter}
+            onChange={e => setDeptFilter(e.target.value)}
+          >
+            <option value="ALL">All Departments</option>
+            {departments.map(d => <option key={d} value={d}>{d}</option>)}
+          </select>
+        )}
+
+        {/* Clear filters */}
+        {(search || roleFilter !== 'ALL' || deptFilter !== 'ALL') && (
+          <button
+            onClick={() => { setSearch(''); setRoleFilter('ALL'); setDeptFilter('ALL') }}
+            className="btn-secondary text-xs px-4"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
+      {/* Stats row */}
+      <div className="flex gap-3 mb-6">
+        {['EMPLOYEE', 'MANAGER', 'ADMIN'].map(role => {
+          const count = users.filter(u => u.role === role).length
+          return (
+            <div key={role} className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-mono cursor-pointer transition-all ${
+              roleFilter === role ? `${roleBg[role]} ${roleColor[role]} font-700` : 'bg-ink-800 border-ink-600 text-slate-dim hover:border-ink-400'
+            }`}
+              onClick={() => setRoleFilter(roleFilter === role ? 'ALL' : role)}
+            >
+              <span>{role}</span>
+              <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-800 ${roleFilter === role ? '' : 'bg-ink-700'}`}>
+                {count}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+
+      {filtered.length === 0 ? (
+        <EmptyState icon={Users} title="No users found" description="Try adjusting your search or filter." />
       ) : (
         <div className="card">
           <div className="overflow-x-auto">
@@ -99,11 +186,11 @@ export default function AdminUsers() {
                 </tr>
               </thead>
               <tbody>
-                {users.map(u => (
+                {filtered.map(u => (
                   <tr key={u.id} className="table-row">
                     <td className="py-3 pr-4">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-ink-600 rounded-xl flex items-center justify-center">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center border ${roleBg[u.role]}`}>
                           <span className={`text-xs font-700 ${roleColor[u.role]}`}>{u.name[0]}</span>
                         </div>
                         <div>
@@ -137,11 +224,7 @@ export default function AdminUsers() {
       )}
 
       {/* Create / Edit Modal */}
-      <Modal
-        open={!!modal}
-        onClose={() => setModal(null)}
-        title={modal === 'create' ? 'Add New User' : `Edit — ${modal?.name}`}
-      >
+      <Modal open={!!modal} onClose={() => setModal(null)} title={modal === 'create' ? 'Add New User' : `Edit — ${modal?.name}`}>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
@@ -190,7 +273,7 @@ export default function AdminUsers() {
       {/* Delete Confirm */}
       <Modal open={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} title="Delete User">
         <div className="space-y-4">
-          <p className="text-slate-mid text-sm">Are you sure you want to delete <strong className="text-white">{deleteConfirm?.name}</strong>? This cannot be undone.</p>
+          <p className="text-slate-mid text-sm">Are you sure you want to delete <strong className="text-white">{deleteConfirm?.name}</strong>? All their goals, check-ins and data will be removed.</p>
           <div className="flex gap-3">
             <button onClick={() => setDeleteConfirm(null)} className="btn-secondary flex-1">Cancel</button>
             <button onClick={handleDelete} className="btn-danger flex-1">Delete User</button>

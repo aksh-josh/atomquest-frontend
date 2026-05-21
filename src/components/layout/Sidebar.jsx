@@ -1,30 +1,12 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useNotifications } from '../../hooks/useNotifications'
 import {
   LayoutDashboard, Target, CheckSquare, Users, Settings,
-  BookOpen, BarChart3, LogOut, Zap, ChevronRight, HelpCircle
+  BookOpen, LogOut, Zap, ChevronRight, HelpCircle, Trophy
 } from 'lucide-react'
 
 const STORAGE_KEY = (role) => `aq_onboarded_${role}`
-
-const navByRole = {
-  EMPLOYEE: [
-    { to: '/employee', label: 'Dashboard', icon: LayoutDashboard, end: true },
-    { to: '/employee/goals', label: 'My Goals', icon: Target },
-    { to: '/employee/checkins', label: 'Check-ins', icon: CheckSquare },
-  ],
-  MANAGER: [
-    { to: '/manager', label: 'Dashboard', icon: LayoutDashboard, end: true },
-    { to: '/manager/team', label: 'Team Goals', icon: Users },
-    { to: '/manager/checkins', label: 'Check-ins', icon: CheckSquare },
-  ],
-  ADMIN: [
-    { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
-    { to: '/admin/users', label: 'Users', icon: Users },
-    { to: '/admin/cycles', label: 'Cycles', icon: Settings },
-    { to: '/admin/audit', label: 'Audit Logs', icon: BookOpen },
-  ],
-}
 
 const roleColors = {
   EMPLOYEE: 'text-info',
@@ -32,15 +14,49 @@ const roleColors = {
   ADMIN: 'text-volt',
 }
 
+// Badge dot component
+const BadgeDot = ({ count }) => {
+  if (!count || count === 0) return null
+  return (
+    <span className="min-w-[18px] h-[18px] bg-danger text-white text-[10px] font-mono font-700 rounded-full flex items-center justify-center px-1">
+      {count > 9 ? '9+' : count}
+    </span>
+  )
+}
+
 export default function Sidebar() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const nav = navByRole[user?.role] || []
+  const { badges } = useNotifications()
 
   const handleLogout = () => {
     logout()
     navigate('/login')
   }
+
+  // Nav per role with badge keys
+  const navByRole = {
+    EMPLOYEE: [
+      { to: '/employee', label: 'Dashboard', icon: LayoutDashboard, end: true, badgeKey: null },
+      { to: '/employee/goals', label: 'My Goals', icon: Target, badgeKey: 'goals' },
+      { to: '/employee/checkins', label: 'Check-ins', icon: CheckSquare, badgeKey: null },
+    ],
+    MANAGER: [
+      { to: '/manager', label: 'Dashboard', icon: LayoutDashboard, end: true, badgeKey: null },
+      { to: '/manager/team', label: 'Team Goals', icon: Users, badgeKey: 'team' },
+      { to: '/manager/checkins', label: 'Check-ins', icon: CheckSquare, badgeKey: 'checkins' },
+      { to: '/manager/leaderboard', label: 'Leaderboard', icon: Trophy, badgeKey: null },
+    ],
+    ADMIN: [
+      { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true, badgeKey: 'dashboard' },
+      { to: '/admin/users', label: 'Users', icon: Users, badgeKey: null },
+      { to: '/admin/cycles', label: 'Cycles', icon: Settings, badgeKey: null },
+      { to: '/admin/leaderboard', label: 'Leaderboard', icon: Trophy, badgeKey: null },
+      { to: '/admin/audit', label: 'Audit Logs', icon: BookOpen, badgeKey: null },
+    ],
+  }
+
+  const nav = navByRole[user?.role] || []
 
   return (
     <aside className="w-64 min-h-screen bg-ink-800 border-r border-ink-600 flex flex-col">
@@ -74,28 +90,32 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 p-4 space-y-1">
-        {nav.map(({ to, label, icon: Icon, end }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group ${
-                isActive
-                  ? 'bg-volt text-ink-900 font-display font-700 shadow-volt'
-                  : 'text-slate-mid hover:text-white hover:bg-ink-700'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <Icon size={17} strokeWidth={isActive ? 2.5 : 2} />
-                <span className="flex-1">{label}</span>
-                {isActive && <ChevronRight size={14} strokeWidth={2.5} />}
-              </>
-            )}
-          </NavLink>
-        ))}
+        {nav.map(({ to, label, icon: Icon, end, badgeKey }) => {
+          const badgeCount = badgeKey ? badges[badgeKey] : 0
+          return (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group ${
+                  isActive
+                    ? 'bg-volt text-ink-900 font-display font-700 shadow-volt'
+                    : 'text-slate-mid hover:text-white hover:bg-ink-700'
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <Icon size={17} strokeWidth={isActive ? 2.5 : 2} />
+                  <span className="flex-1">{label}</span>
+                  {!isActive && <BadgeDot count={badgeCount} />}
+                  {isActive && <ChevronRight size={14} strokeWidth={2.5} />}
+                </>
+              )}
+            </NavLink>
+          )
+        })}
       </nav>
 
       {/* Logout + Help */}

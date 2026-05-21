@@ -13,6 +13,7 @@ import AdminDashboard from './pages/admin/Dashboard'
 import AdminUsers from './pages/admin/Users'
 import AdminCycles from './pages/admin/Cycles'
 import AdminAuditLogs from './pages/admin/AuditLogs'
+import Leaderboard from './pages/Leaderboard'
 
 const ProtectedRoute = ({ children, roles }) => {
   const { user, loading } = useAuth()
@@ -64,6 +65,8 @@ export default function App() {
         <Route path="/admin/users" element={<ProtectedRoute roles={['ADMIN']}><AdminUsers /></ProtectedRoute>} />
         <Route path="/admin/cycles" element={<ProtectedRoute roles={['ADMIN']}><AdminCycles /></ProtectedRoute>} />
         <Route path="/admin/audit" element={<ProtectedRoute roles={['ADMIN']}><AdminAuditLogs /></ProtectedRoute>} />
+        <Route path="/admin/leaderboard" element={<ProtectedRoute roles={['ADMIN']}><Leaderboard /></ProtectedRoute>} />
+        <Route path="/manager/leaderboard" element={<ProtectedRoute roles={['MANAGER']}><Leaderboard /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

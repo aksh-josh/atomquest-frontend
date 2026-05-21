@@ -75,11 +75,14 @@ export const adminAPI = {
 // ─── REPORTS ─────────────────────────────────────────────────────────────────
 export const reportsAPI = {
   getAchievement: (params) => api.get('/api/reports/achievement', { params }),
-  downloadCSV: () => {
-    const token = localStorage.getItem('aq_token')
-    window.open(`${BASE_URL}/api/reports/achievement?format=csv&token=${token}`, '_blank')
-  },
+  downloadCSV: () => api.get('/api/reports/achievement', { params: { format: 'csv' }, responseType: 'blob' }),
   getCompletion: () => api.get('/api/reports/completion'),
+  getLeaderboard: () => api.get('/api/reports/leaderboard'),
+}
+
+// ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
+export const notificationsAPI = {
+  get: () => api.get('/api/notifications'),
 }
 
 export default api
